@@ -1,6 +1,7 @@
 package list
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/MakeNowJust/heredoc"
@@ -54,6 +55,11 @@ func listRun(opts *ListOptions) error {
 	if err != nil {
 		return err
 	}
+	if len(data.User.Sponsors.Edges) <= 0 {
+		fmt.Printf("No sponsors found for %s\n", opts.User)
+		return nil
+	}
+	
 	t := tableprinter.New(opts.IO, tableprinter.WithHeader("SPONSOR"))
 
 	for _, sponsor := range data.User.Sponsors.Edges {
