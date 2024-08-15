@@ -12,11 +12,16 @@ import (
 	"github.com/spf13/cobra"
 )
 
+type iprompter interface {
+	Input(prompt, defaultValue string) (string, error)
+}
+
 type ListOptions struct {
 	HttpClient func() (*http.Client, error)
 	Config     func() (gh.Config, error)
 	IO         *iostreams.IOStreams
 	User       string
+	Prompter   iprompter
 }
 
 func NewCmdList(f *cmdutil.Factory, runF func(*ListOptions) error) *cobra.Command {
@@ -24,6 +29,7 @@ func NewCmdList(f *cmdutil.Factory, runF func(*ListOptions) error) *cobra.Comman
 		HttpClient: f.HttpClient,
 		Config:     f.Config,
 		IO:         f.IOStreams,
+		Prompter:   f.Prompter,
 	}
 
 	cmd := &cobra.Command{
@@ -32,9 +38,12 @@ func NewCmdList(f *cmdutil.Factory, runF func(*ListOptions) error) *cobra.Comman
 		Long:    heredoc.Doc(`List user's sponsors`),
 		Example: heredoc.Doc(`$ gh sponsors list`),
 		Aliases: []string{"ls"},
-		Args:    cmdutil.ExactArgs(1, "expected exactly one argument: the user to list sponsors for"),
+		Args:    cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			opts.User = args[0]
+			if len(args) > 0 {
+				opts.User = args[0]
+			}
+
 			if runF != nil {
 				return runF(opts)
 			}
@@ -49,6 +58,13 @@ func listRun(opts *ListOptions) error {
 	client, err := opts.HttpClient()
 	if err != nil {
 		return err
+	}
+
+	if opts.User == "" {
+		opts.User, err = opts.Prompter.Input("Which user do you want to target?", "")
+		if err != nil {
+			return err
+		}
 	}
 
 	data, err := listSponsors(client, opts)
