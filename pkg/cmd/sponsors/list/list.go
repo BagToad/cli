@@ -44,6 +44,10 @@ func NewCmdList(f *cmdutil.Factory, runF func(*ListOptions) error) *cobra.Comman
 				opts.User = args[0]
 			}
 
+			if !opts.IO.CanPrompt() && opts.User == "" {
+				return cmdutil.FlagErrorf("user required when not running interactively")
+			}
+
 			if runF != nil {
 				return runF(opts)
 			}
