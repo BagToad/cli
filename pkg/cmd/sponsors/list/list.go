@@ -22,6 +22,7 @@ type ListOptions struct {
 	IO         *iostreams.IOStreams
 	User       string
 	Prompter   iprompter
+	Exporter   cmdutil.Exporter
 }
 
 func NewCmdList(f *cmdutil.Factory, runF func(*ListOptions) error) *cobra.Command {
@@ -55,6 +56,8 @@ func NewCmdList(f *cmdutil.Factory, runF func(*ListOptions) error) *cobra.Comman
 		},
 	}
 
+	cmdutil.AddJSONFlags(cmd, &opts.Exporter, []string{"login"})
+
 	return cmd
 }
 
@@ -75,15 +78,20 @@ func listRun(opts *ListOptions) error {
 	if err != nil {
 		return err
 	}
-	if len(data.User.Sponsors.Edges) <= 0 && opts.IO.IsStdoutTTY() {
+
+	if opts.Exporter != nil {
+		return opts.Exporter.Write(opts.IO, data)
+	}
+
+	if len(data.Sponsors) <= 0 && opts.IO.IsStdoutTTY() {
 		fmt.Printf("No sponsors found for %s\n", opts.User)
 		return nil
 	}
 
 	t := tableprinter.New(opts.IO, tableprinter.WithHeader("SPONSOR"))
 
-	for _, sponsor := range data.User.Sponsors.Edges {
-		t.AddField(sponsor.Node.Login)
+	for _, sponsor := range data.Sponsors {
+		t.AddField(sponsor)
 		t.EndRow()
 	}
 

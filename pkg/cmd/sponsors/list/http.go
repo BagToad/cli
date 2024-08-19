@@ -6,7 +6,7 @@ import (
 	"github.com/cli/cli/v2/api"
 )
 
-type SponsorsList struct {
+type sponsorsResponse struct {
 	User struct {
 		Sponsors struct {
 			Edges []struct {
@@ -14,9 +14,12 @@ type SponsorsList struct {
 					Login string `json:"login,omitempty"`
 				}
 			}
-			TotalCount int `json:"totalCount"`
 		}
 	}
+}
+
+type SponsorsList struct {
+	Sponsors []string `json:"login"`
 }
 
 func listSponsors(client *http.Client, opts *ListOptions) (SponsorsList, error) {
@@ -33,14 +36,13 @@ func listSponsors(client *http.Client, opts *ListOptions) (SponsorsList, error) 
                         }
                     }
                 }
-                totalCount
             }
         }
     }`
 
 	apiClient := api.NewClientFromHTTP(client)
 
-	var data SponsorsList
+	var data sponsorsResponse
 
 	cfg, err := opts.Config()
 	if err != nil {
@@ -56,5 +58,13 @@ func listSponsors(client *http.Client, opts *ListOptions) (SponsorsList, error) 
 		return SponsorsList{}, err
 	}
 
-	return data, nil
+	listResult := SponsorsList{
+		Sponsors: []string{},
+	}
+
+	for _, sponsor := range data.User.Sponsors.Edges {
+		listResult.Sponsors = append(listResult.Sponsors, sponsor.Node.Login)
+	}
+
+	return listResult, nil
 }
