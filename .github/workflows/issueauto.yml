@@ -4,17 +4,73 @@ on:
     types: [opened]
 
 permissions:
-  contents: none
+  contents: read
   issues: write
 
 jobs:
   issue-auto:
     runs-on: ubuntu-latest
     steps:
-      - name: label incoming issue
+        # Only checkout the ISSUE_TEMPLATES directory
+        # This is only needed to get the issue template content
+      - name: checkout .github/ISSUE_TEMPLATES
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/ISSUE_TEMPLATE
+
+        # Close issue if body is the same as an issue template or empty
+      - name: Check issue body for spam
+        id: check-issue-body
         env:
           GH_REPO: ${{ github.repository }}
-          GH_TOKEN: ${{ secrets.AUTOMATION_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
+          ISSUENUM: ${{ github.event.issue.number }}
+        run: |
+          # Get the issue body using GitHub CLI
+          ISSUE_BODY=$(gh issue view "$ISSUENUM" --json body --jq .body)
+
+          # Get a list of all template files in the ISSUE_TEMPLATE directory
+          TEMPLATE_FILES=$(ls .github/ISSUE_TEMPLATE)
+
+          # Initialize output variable
+          ISSUE_CLOSED=false
+
+          # Loop through each template file
+          for TEMPLATE_FILE in $TEMPLATE_FILES; do
+            # Get the issue template content
+            TEMPLATE_CONTENT=$(cat ".github/ISSUE_TEMPLATE/$TEMPLATE_FILE")
+
+            # Strip the frontmatter from the issue template content
+            STRIPPED_TEMPLATE_CONTENT=$(echo "$TEMPLATE_CONTENT" | sed -n '/^---$/,/^---$/!p' | sed '1d')
+
+            # Compare the stripped issue template content with the issue body
+            if [ "$ISSUE_BODY" == "$STRIPPED_TEMPLATE_CONTENT" ]; then
+              echo "💀 The issue body exactly matches the issue template: $TEMPLATE_FILE."
+              gh issue close "$ISSUENUM" --reason "not planned"
+              ISSUE_CLOSED=true
+              break
+            fi
+          done
+
+          # Check if the issue body is completely empty
+          if [ -z "$ISSUE_BODY" -a "$ISSUE_CLOSED" == "false" ]; then
+            echo "💀 The issue body is empty."
+            gh issue close "$ISSUENUM" --reason "not planned"
+            ISSUE_CLOSED=true
+          fi
+
+          if [ "$ISSUE_CLOSED" == "false" ]; then
+            echo "✅ The issue body looks like not spam."
+          fi
+
+          echo "issue_closed=$ISSUE_CLOSED" >> $GITHUB_OUTPUT
+
+      - name: Label incoming issue
+        # Only label the issue if it is not already closed by anti-spam
+        if: ${{ steps.check-issue-body.outputs.issue_closed == 'false' }}
+        env:
+          GH_REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
           ISSUENUM: ${{ github.event.issue.number }}
           ISSUEAUTHOR: ${{ github.event.issue.user.login }}
         run: |
