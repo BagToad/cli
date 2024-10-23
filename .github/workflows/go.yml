@@ -17,9 +17,25 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Go
+        id: setup-go
         uses: actions/setup-go@v5
         with:
           go-version-file: "go.mod"
+          cache: false
+
+      - name: Get go cache locations
+        id: get-go-caches
+        run: |
+          echo "gocache=$(go env GOCACHE)" >> $GITHUB_OUTPUT
+          echo "gomodcache=$(go env GOMODCACHE)" >> $GITHUB_OUTPUT
+
+      - name: Cache go
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ steps.get-go-caches.outputs.gocache }}
+            ${{ steps.get-go-caches.outputs.gomodcache }}
+          key: ${{ runner.os }}-go${{ steps.setup-go.outputs.go-version }}-${{ hashFiles('go.sum') }}
 
       - name: Download dependencies
         run: go mod download
