@@ -47,6 +47,7 @@ type ViewOptions struct {
 	Web         bool
 	Log         bool
 	Follow      bool
+	Exporter    cmdutil.Exporter
 }
 
 func defaultLogRenderer() shared.LogRenderer {
@@ -124,6 +125,7 @@ func NewCmdView(f *cmdutil.Factory, runF func(*ViewOptions) error) *cobra.Comman
 	cmd.Flags().BoolVarP(&opts.Web, "web", "w", false, "Open agent task in the browser")
 	cmd.Flags().BoolVar(&opts.Log, "log", false, "Show agent session logs")
 	cmd.Flags().BoolVar(&opts.Follow, "follow", false, "Follow agent session logs")
+	cmdutil.AddJSONFlags(cmd, &opts.Exporter, capi.SessionFields)
 
 	return cmd
 }
@@ -287,6 +289,10 @@ func viewRun(opts *ViewOptions) error {
 
 	if opts.Log {
 		return printLogs(opts, capiClient, session.ID)
+	}
+
+	if opts.Exporter != nil {
+		return opts.Exporter.Write(opts.IO, session)
 	}
 
 	printSession(opts, session)

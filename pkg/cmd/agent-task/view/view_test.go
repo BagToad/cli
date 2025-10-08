@@ -1258,3 +1258,71 @@ func Test_viewRun(t *testing.T) {
 		})
 	}
 }
+
+func Test_viewRun_json(t *testing.T) {
+	sampleDate := time.Date(2023, time.January, 1, 0, 0, 0, 0, time.UTC)
+	sampleCompletedAt := sampleDate.Add(5 * time.Minute)
+
+	io, _, stdout, stderr := iostreams.Test()
+	io.SetStdoutTTY(false)
+
+	opts := ViewOptions{
+		IO: io,
+		SessionID: "some-session-id",
+		SelectorArg: "some-session-id",
+		CapiClient: func() (capi.CapiClient, error) {
+			m := &capi.CapiClientMock{
+				GetSessionFunc: func(_ context.Context, id string) (*capi.Session, error) {
+					assert.Equal(t, "some-session-id", id)
+					return &capi.Session{
+						ID:              "some-session-id",
+						State:           "completed",
+						Name:            "session one",
+						CreatedAt:       sampleDate,
+						CompletedAt:     sampleCompletedAt,
+						PremiumRequests: 1.5,
+						UserID:          123,
+						AgentID:         456,
+						User: &api.GitHubUser{
+							Login: "octocat",
+						},
+					}, nil
+				},
+			}
+			return m, nil
+		},
+		Exporter: &testExporter{
+			fields: []string{"id", "name", "state"},
+		},
+	}
+
+	err := viewRun(&opts)
+	assert.NoError(t, err)
+	assert.Contains(t, stdout.String(), `id: some-session-id`)
+	assert.Contains(t, stdout.String(), `name: session one`)
+	assert.Contains(t, stdout.String(), `state: completed`)
+	assert.Equal(t, "", stderr.String())
+}
+
+type testExporter struct {
+	fields []string
+}
+
+func (e *testExporter) Fields() []string {
+	return e.fields
+}
+
+func (e *testExporter) Write(io *iostreams.IOStreams, data interface{}) error {
+	s := data.(*capi.Session)
+	for _, field := range e.fields {
+		switch field {
+		case "id":
+			io.Out.Write([]byte("id: " + s.ID + "\n"))
+		case "name":
+			io.Out.Write([]byte("name: " + s.Name + "\n"))
+		case "state":
+			io.Out.Write([]byte("state: " + s.State + "\n"))
+		}
+	}
+	return nil
+}
