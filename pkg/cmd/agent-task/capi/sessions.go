@@ -106,6 +106,10 @@ type SessionError struct {
 // ExportData implements the exportable interface for JSON output.
 // It returns a map of the Session's fields specified in the fields parameter.
 // The function uses case-insensitive field name matching.
+//
+// Available fields: id, name, userId, agentId, state, ownerId, repoId,
+// resourceType, resourceId, lastUpdatedAt, createdAt, completedAt, eventUrl,
+// eventType, premiumRequests, workflowRunId, error, pullRequest, user
 func (s *Session) ExportData(fields []string) map[string]interface{} {
 	return cmdutil.StructExportData(s, fields)
 }
