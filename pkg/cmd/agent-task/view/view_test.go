@@ -113,6 +113,20 @@ func TestNewCmdList(t *testing.T) {
 				Web:         true,
 			},
 		},
+		{
+			name: "with --json flag",
+			tty:  true,
+			args: "some-arg --json id,name,state",
+			wantOpts: ViewOptions{
+				SelectorArg: "some-arg",
+			},
+		},
+		{
+			name:    "cannot use --json with --web",
+			tty:     true,
+			args:    "some-arg --json id --web",
+			wantErr: "cannot use `--web` with `--json`",
+		},
 	}
 
 	for _, tt := range tests {
@@ -1301,6 +1315,52 @@ func Test_viewRun_json(t *testing.T) {
 	assert.Contains(t, stdout.String(), `id: some-session-id`)
 	assert.Contains(t, stdout.String(), `name: session one`)
 	assert.Contains(t, stdout.String(), `state: completed`)
+	assert.Equal(t, "", stderr.String())
+}
+
+func Test_viewRun_jsonExporter(t *testing.T) {
+	sampleDate := time.Date(2023, time.January, 1, 0, 0, 0, 0, time.UTC)
+	sampleCompletedAt := sampleDate.Add(5 * time.Minute)
+
+	io, _, stdout, stderr := iostreams.Test()
+	io.SetStdoutTTY(false)
+
+	exporter := cmdutil.NewJSONExporter()
+	exporter.SetFields([]string{"id", "name", "state", "userId", "premiumRequests"})
+
+	opts := ViewOptions{
+		IO:          io,
+		SessionID:   "some-session-id",
+		SelectorArg: "some-session-id",
+		CapiClient: func() (capi.CapiClient, error) {
+			m := &capi.CapiClientMock{
+				GetSessionFunc: func(_ context.Context, id string) (*capi.Session, error) {
+					assert.Equal(t, "some-session-id", id)
+					return &capi.Session{
+						ID:              "some-session-id",
+						State:           "completed",
+						Name:            "session one",
+						CreatedAt:       sampleDate,
+						CompletedAt:     sampleCompletedAt,
+						PremiumRequests: 1.5,
+						UserID:          123,
+						AgentID:         456,
+						User: &api.GitHubUser{
+							Login: "octocat",
+						},
+					}, nil
+				},
+			}
+			return m, nil
+		},
+		Exporter: exporter,
+	}
+
+	err := viewRun(&opts)
+	assert.NoError(t, err)
+	require.JSONEq(t,
+		`{"id":"some-session-id","name":"session one","premiumRequests":1.5,"state":"completed","userId":123}`,
+		stdout.String())
 	assert.Equal(t, "", stderr.String())
 }
 
