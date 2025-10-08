@@ -102,6 +102,54 @@ type SessionError struct {
 	Message string
 }
 
+// ExportData implements the exportable interface for JSON output
+func (s *Session) ExportData(fields []string) map[string]interface{} {
+	data := make(map[string]interface{})
+	for _, f := range fields {
+		switch f {
+		case "id":
+			data[f] = s.ID
+		case "name":
+			data[f] = s.Name
+		case "userId":
+			data[f] = s.UserID
+		case "agentId":
+			data[f] = s.AgentID
+		case "state":
+			data[f] = s.State
+		case "ownerId":
+			data[f] = s.OwnerID
+		case "repoId":
+			data[f] = s.RepoID
+		case "resourceType":
+			data[f] = s.ResourceType
+		case "resourceId":
+			data[f] = s.ResourceID
+		case "lastUpdatedAt":
+			data[f] = s.LastUpdatedAt
+		case "createdAt":
+			data[f] = s.CreatedAt
+		case "completedAt":
+			data[f] = s.CompletedAt
+		case "eventUrl":
+			data[f] = s.EventURL
+		case "eventType":
+			data[f] = s.EventType
+		case "premiumRequests":
+			data[f] = s.PremiumRequests
+		case "workflowRunId":
+			data[f] = s.WorkflowRunID
+		case "error":
+			data[f] = s.Error
+		case "pullRequest":
+			data[f] = s.PullRequest
+		case "user":
+			data[f] = s.User
+		}
+	}
+	return data
+}
+
 type resource struct {
 	ID                   string            `json:"id"`
 	UserID               uint64            `json:"user_id"`

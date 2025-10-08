@@ -3,6 +3,7 @@ package view
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"io"
 	"testing"
@@ -1257,4 +1258,85 @@ func Test_viewRun(t *testing.T) {
 			assert.Equal(t, tt.wantBrowserURL, browser.BrowsedURL())
 		})
 	}
+}
+
+func Test_viewRun_json(t *testing.T) {
+	sampleDate := time.Now().Add(-6 * time.Hour)
+	sampleCompletedAt := sampleDate.Add(5 * time.Minute)
+
+	ios, _, stdout, stderr := iostreams.Test()
+	ios.SetStdoutTTY(false)
+
+	capiClientMock := &capi.CapiClientMock{
+		GetSessionFunc: func(_ context.Context, id string) (*capi.Session, error) {
+			assert.Equal(t, "some-session-id", id)
+			return &capi.Session{
+				ID:              "some-session-id",
+				State:           "completed",
+				Name:            "session one",
+				UserID:          123,
+				AgentID:         456,
+				CreatedAt:       sampleDate,
+				CompletedAt:     sampleCompletedAt,
+				PremiumRequests: 1.5,
+				PullRequest: &api.PullRequest{
+					Title:  "fix something",
+					Number: 101,
+					URL:    "https://github.com/OWNER/REPO/pull/101",
+					Repository: &api.PRRepository{
+						NameWithOwner: "OWNER/REPO",
+					},
+				},
+				User: &api.GitHubUser{
+					Login: "octocat",
+				},
+			}, nil
+		},
+	}
+
+	exporter := cmdutil.NewJSONExporter()
+	exporter.SetFields([]string{"id", "name", "state", "premiumRequests"})
+
+	opts := ViewOptions{
+		IO:          ios,
+		SelectorArg: "some-session-id",
+		SessionID:   "some-session-id",
+		CapiClient: func() (capi.CapiClient, error) {
+			return capiClientMock, nil
+		},
+		Exporter: exporter,
+	}
+
+	err := viewRun(&opts)
+	require.NoError(t, err)
+
+	var result map[string]interface{}
+	err = json.Unmarshal([]byte(stdout.String()), &result)
+	require.NoError(t, err)
+
+	assert.Equal(t, "some-session-id", result["id"])
+	assert.Equal(t, "session one", result["name"])
+	assert.Equal(t, "completed", result["state"])
+	assert.Equal(t, 1.5, result["premiumRequests"])
+	assert.Equal(t, "", stderr.String())
+}
+
+func Test_viewRun_json_incompatible_with_log(t *testing.T) {
+	ios, _, _, _ := iostreams.Test()
+	ios.SetStdoutTTY(false)
+
+	exporter := cmdutil.NewJSONExporter()
+	exporter.SetFields([]string{"id"})
+
+	opts := ViewOptions{
+		IO:          ios,
+		SelectorArg: "some-session-id",
+		SessionID:   "some-session-id",
+		Log:         true,
+		Exporter:    exporter,
+	}
+
+	err := viewRun(&opts)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "cannot use `--json` with `--log`")
 }

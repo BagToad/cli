@@ -37,6 +37,7 @@ type ViewOptions struct {
 	Finder     prShared.PRFinder
 	Prompter   prompter.Prompter
 	Browser    browser.Browser
+	Exporter   cmdutil.Exporter
 
 	LogRenderer func() shared.LogRenderer
 	Sleep       func(d time.Duration)
@@ -125,10 +126,37 @@ func NewCmdView(f *cmdutil.Factory, runF func(*ViewOptions) error) *cobra.Comman
 	cmd.Flags().BoolVar(&opts.Log, "log", false, "Show agent session logs")
 	cmd.Flags().BoolVar(&opts.Follow, "follow", false, "Follow agent session logs")
 
+	cmdutil.AddJSONFlags(cmd, &opts.Exporter, []string{
+		"id",
+		"name",
+		"userId",
+		"agentId",
+		"state",
+		"ownerId",
+		"repoId",
+		"resourceType",
+		"resourceId",
+		"lastUpdatedAt",
+		"createdAt",
+		"completedAt",
+		"eventUrl",
+		"eventType",
+		"premiumRequests",
+		"workflowRunId",
+		"error",
+		"pullRequest",
+		"user",
+	})
+
 	return cmd
 }
 
 func viewRun(opts *ViewOptions) error {
+	// JSON output and log viewing are incompatible
+	if opts.Exporter != nil && opts.Log {
+		return cmdutil.FlagErrorf("cannot use `--json` with `--log`")
+	}
+
 	capiClient, err := opts.CapiClient()
 	if err != nil {
 		return err
@@ -283,6 +311,10 @@ func viewRun(opts *ViewOptions) error {
 		}
 
 		opts.IO.StopProgressIndicator()
+	}
+
+	if opts.Exporter != nil {
+		return opts.Exporter.Write(opts.IO, session)
 	}
 
 	if opts.Log {
