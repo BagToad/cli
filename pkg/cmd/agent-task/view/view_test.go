@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"testing"
 	"time"
@@ -22,6 +23,24 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+// testExporter is a simple test implementation of cmdutil.Exporter
+type testExporter struct {
+	fields []string
+}
+
+func (t *testExporter) Fields() []string {
+	return t.fields
+}
+
+func (t *testExporter) Write(io *iostreams.IOStreams, data interface{}) error {
+	session, ok := data.(*capi.Session)
+	if !ok {
+		return fmt.Errorf("expected data type *capi.Session")
+	}
+	fmt.Fprintf(io.Out, "session exported: %s\n", session.ID)
+	return nil
+}
 
 func TestNewCmdList(t *testing.T) {
 	tests := []struct {
@@ -1208,6 +1227,42 @@ func Test_viewRun(t *testing.T) {
 				(rendered:) <raw-logs-one>
 				(rendered:) <raw-logs-two>
 			`),
+		},
+		{
+			name: "with json export (non-tty)",
+			tty:  false,
+			opts: ViewOptions{
+				SelectorArg: "some-session-id",
+				SessionID:   "some-session-id",
+				Exporter: &testExporter{
+					fields: []string{"id", "name", "state"},
+				},
+			},
+			capiStubs: func(t *testing.T, m *capi.CapiClientMock) {
+				m.GetSessionFunc = func(_ context.Context, id string) (*capi.Session, error) {
+					assert.Equal(t, "some-session-id", id)
+					return &capi.Session{
+						ID:              "some-session-id",
+						State:           "completed",
+						Name:            "session one",
+						CreatedAt:       sampleDate,
+						CompletedAt:     sampleCompletedAt,
+						PremiumRequests: 1.5,
+						PullRequest: &api.PullRequest{
+							Title:  "fix something",
+							Number: 101,
+							URL:    "https://github.com/OWNER/REPO/pull/101",
+							Repository: &api.PRRepository{
+								NameWithOwner: "OWNER/REPO",
+							},
+						},
+						User: &api.GitHubUser{
+							Login: "octocat",
+						},
+					}, nil
+				}
+			},
+			wantOut: "session exported: some-session-id\n",
 		},
 	}
 

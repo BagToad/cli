@@ -29,6 +29,28 @@ const (
 	defaultLogPollInterval = 5 * time.Second
 )
 
+var SessionFields = []string{
+	"id",
+	"name",
+	"state",
+	"createdAt",
+	"lastUpdatedAt",
+	"completedAt",
+	"premiumRequests",
+	"eventType",
+	"eventURL",
+	"userId",
+	"agentId",
+	"ownerId",
+	"repoId",
+	"resourceType",
+	"resourceId",
+	"workflowRunId",
+	"error",
+	"pullRequest",
+	"user",
+}
+
 type ViewOptions struct {
 	IO         *iostreams.IOStreams
 	BaseRepo   func() (ghrepo.Interface, error)
@@ -47,6 +69,7 @@ type ViewOptions struct {
 	Web         bool
 	Log         bool
 	Follow      bool
+	Exporter    cmdutil.Exporter
 }
 
 func defaultLogRenderer() shared.LogRenderer {
@@ -124,6 +147,7 @@ func NewCmdView(f *cmdutil.Factory, runF func(*ViewOptions) error) *cobra.Comman
 	cmd.Flags().BoolVarP(&opts.Web, "web", "w", false, "Open agent task in the browser")
 	cmd.Flags().BoolVar(&opts.Log, "log", false, "Show agent session logs")
 	cmd.Flags().BoolVar(&opts.Follow, "follow", false, "Follow agent session logs")
+	cmdutil.AddJSONFlags(cmd, &opts.Exporter, SessionFields)
 
 	return cmd
 }
@@ -283,6 +307,10 @@ func viewRun(opts *ViewOptions) error {
 		}
 
 		opts.IO.StopProgressIndicator()
+	}
+
+	if opts.Exporter != nil {
+		return opts.Exporter.Write(opts.IO, session)
 	}
 
 	if opts.Log {
