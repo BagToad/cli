@@ -74,23 +74,23 @@ type sessionPullRequest struct {
 
 // Session is a hydrated in-flight agent task
 type Session struct {
-	ID              string    `json:"id"`
-	Name            string    `json:"name"`
-	UserID          int64     `json:"userId"`
-	AgentID         int64     `json:"agentId"`
-	Logs            string    `json:"logs,omitempty"`
-	State           string    `json:"state"`
-	OwnerID         uint64    `json:"ownerId"`
-	RepoID          uint64    `json:"repoId"`
-	ResourceType    string    `json:"resourceType"`
-	ResourceID      int64     `json:"resourceId"`
-	LastUpdatedAt   time.Time `json:"lastUpdatedAt"`
-	CreatedAt       time.Time `json:"createdAt"`
-	CompletedAt     time.Time `json:"completedAt"`
-	EventURL        string    `json:"eventURL"`
-	EventType       string    `json:"eventType"`
-	PremiumRequests float64   `json:"premiumRequests"`
-	WorkflowRunID   uint64    `json:"workflowRunId,omitempty"`
+	ID              string        `json:"id"`
+	Name            string        `json:"name"`
+	UserID          int64         `json:"userId"`
+	AgentID         int64         `json:"agentId"`
+	Logs            string        `json:"logs,omitempty"`
+	State           string        `json:"state"`
+	OwnerID         uint64        `json:"ownerId"`
+	RepoID          uint64        `json:"repoId"`
+	ResourceType    string        `json:"resourceType"`
+	ResourceID      int64         `json:"resourceId"`
+	LastUpdatedAt   time.Time     `json:"lastUpdatedAt"`
+	CreatedAt       time.Time     `json:"createdAt"`
+	CompletedAt     time.Time     `json:"completedAt"`
+	EventURL        string        `json:"eventURL"`
+	EventType       string        `json:"eventType"`
+	PremiumRequests float64       `json:"premiumRequests"`
+	WorkflowRunID   uint64        `json:"workflowRunId,omitempty"`
 	Error           *SessionError `json:"error,omitempty"`
 
 	PullRequest *api.PullRequest `json:"pullRequest,omitempty"`
