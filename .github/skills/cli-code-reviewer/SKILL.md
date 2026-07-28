@@ -32,6 +32,7 @@ Severity: blocking
 - New behavior that ships without tests. Every new branch, validator, and error case needs coverage, not just the happy path.
 - Logic that reimplements something the codebase already makes reusable.
   - Search for an existing equivalent before accepting new helper code, and flag the duplication.
+  - Read the candidate helper's implementation to confirm it is equivalent, then report the duplication as a confirmed fact rather than a guess.
   - Look first in:
     - the command set's `shared` package, for logic shared across its subcommands
     - the top-level `api` and `git` packages, for operations that span command sets
