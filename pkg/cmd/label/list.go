@@ -23,6 +23,7 @@ type listOptions struct {
 	Exporter cmdutil.Exporter
 	Query    listQueryOptions
 	WebMode  bool
+	Reverse  bool
 }
 
 func newCmdList(f *cmdutil.Factory, runF func(*listOptions) error) *cobra.Command {
@@ -71,6 +72,7 @@ func newCmdList(f *cmdutil.Factory, runF func(*listOptions) error) *cobra.Comman
 	}
 
 	cmd.Flags().BoolVarP(&opts.WebMode, "web", "w", false, "List labels in the web browser")
+	cmd.Flags().BoolVar(&opts.Reverse, "reverse", false, "Reverse the order of the labels returned")
 	cmd.Flags().IntVarP(&opts.Query.Limit, "limit", "L", 30, "Maximum number of labels to fetch")
 	cmd.Flags().StringVarP(&opts.Query.Query, "search", "S", "", "Search label names and descriptions")
 	cmdutil.StringEnumFlag(cmd, &opts.Query.Order, "order", "", defaultOrder, []string{"asc", "desc"}, "Order of labels returned")
@@ -118,6 +120,12 @@ func listRun(opts *listOptions) error {
 			return cmdutil.NewNoResultsError(fmt.Sprintf("no labels in %s matched your search", ghrepo.FullName(baseRepo)))
 		}
 		return cmdutil.NewNoResultsError(fmt.Sprintf("no labels found in %s", ghrepo.FullName(baseRepo)))
+	}
+
+	if opts.Reverse {
+		for i, j := 0, len(labels)-1; i < j; i, j = i+1, j-1 {
+			labels[i], labels[j] = labels[j], labels[i]
+		}
 	}
 
 	if opts.Exporter != nil {
