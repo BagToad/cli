@@ -23,6 +23,7 @@ type cloneOptions struct {
 
 	SourceRepo ghrepo.Interface
 	Force      bool
+	Limit      int
 }
 
 func newCmdClone(f *cmdutil.Factory, runF func(*cloneOptions) error) *cobra.Command {
@@ -69,6 +70,7 @@ func newCmdClone(f *cmdutil.Factory, runF func(*cloneOptions) error) *cobra.Comm
 	}
 
 	cmd.Flags().BoolVarP(&opts.Force, "force", "f", false, "Overwrite labels in the destination repository")
+	cmd.Flags().IntVarP(&opts.Limit, "limit", "L", -1, "Maximum number of labels to clone")
 
 	return cmd
 }
@@ -111,7 +113,7 @@ func cloneRun(opts *cloneOptions) error {
 
 func cloneLabels(client *http.Client, destination ghrepo.Interface, opts *cloneOptions) (successCount uint32, totalCount int, err error) {
 	successCount = 0
-	labels, totalCount, err := listLabels(client, opts.SourceRepo, listQueryOptions{Limit: -1})
+	labels, totalCount, err := listLabels(client, opts.SourceRepo, listQueryOptions{Limit: opts.Limit})
 	if err != nil {
 		return
 	}

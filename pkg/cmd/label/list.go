@@ -136,20 +136,23 @@ func printLabels(io *iostreams.IOStreams, labels []label) error {
 	cs := io.ColorScheme()
 	table := tableprinter.New(io, tableprinter.WithHeader("NAME", "DESCRIPTION", "COLOR"))
 
-	for _, label := range labels {
-		// Colorize the label using tableprinter's WithColor function for it to handle non-TTY situations
-		labelColor := tableprinter.WithColor(func(s string) string {
-			return cs.Label(label.Color, s)
-		})
-
-		table.AddField(label.Name, labelColor)
-		table.AddField(label.Description)
-		table.AddField("#" + label.Color)
-
-		table.EndRow()
+	for _, l := range labels {
+		addLabelRow(table, cs, l)
 	}
 
 	return table.Render()
+}
+
+func addLabelRow(table *tableprinter.TablePrinter, cs *iostreams.ColorScheme, l label) {
+	// Colorize the label using tableprinter's WithColor function for it to handle non-TTY situations
+	labelColor := tableprinter.WithColor(func(s string) string {
+		return cs.Label(l.Color, s)
+	})
+
+	table.AddField(l.Name, labelColor)
+	table.AddField(l.Description)
+	table.AddField("#" + l.Color)
+	table.EndRow()
 }
 
 func listHeader(repoName string, count int, totalCount int) string {
