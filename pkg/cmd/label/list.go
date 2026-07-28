@@ -143,13 +143,25 @@ func printLabels(io *iostreams.IOStreams, labels []label) error {
 		})
 
 		table.AddField(label.Name, labelColor)
-		table.AddField(label.Description)
+		table.AddField(truncateDescription(label.Description))
 		table.AddField("#" + label.Color)
 
 		table.EndRow()
 	}
 
 	return table.Render()
+}
+
+func truncateDescription(s string) string {
+	const maxWidth = 50
+	r := []rune(s)
+	if len(r) <= maxWidth {
+		return s
+	}
+	if maxWidth <= 3 {
+		return string(r[:maxWidth])
+	}
+	return string(r[:maxWidth-3]) + "..."
 }
 
 func listHeader(repoName string, count int, totalCount int) string {
