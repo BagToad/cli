@@ -220,8 +220,8 @@ func TestListRun(t *testing.T) {
 				Showing 2 of 2 labels in OWNER/REPO
 
 				NAME  DESCRIPTION           COLOR
-				bug   This is a bug label   #d73a4a
-				docs  This is a docs label  #ffa8da
+				bug   This is a bug label   d73a4a
+				docs  This is a docs label  ffa8da
 			`),
 		},
 		{
@@ -260,7 +260,7 @@ func TestListRun(t *testing.T) {
 					),
 				)
 			},
-			wantStdout: "bug\tThis is a bug label\t#d73a4a\ndocs\tThis is a docs label\t#ffa8da\n",
+			wantStdout: "bug\tThis is a bug label\td73a4a\ndocs\tThis is a docs label\tffa8da\n",
 		},
 		{
 			name: "empty label list",
@@ -351,8 +351,8 @@ func TestListRun(t *testing.T) {
 			Showing 2 of 2 labels in OWNER/REPO
 
 			NAME  DESCRIPTION           COLOR
-			bug   This is a bug label   #d73a4a
-			docs  This is a docs label  #ffa8da
+			bug   This is a bug label   d73a4a
+			docs  This is a docs label  ffa8da
 			`),
 		},
 	}

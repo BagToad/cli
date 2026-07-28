@@ -144,7 +144,7 @@ func printLabels(io *iostreams.IOStreams, labels []label) error {
 
 		table.AddField(label.Name, labelColor)
 		table.AddField(label.Description)
-		table.AddField("#" + label.Color)
+		table.AddField(label.Color)
 
 		table.EndRow()
 	}
