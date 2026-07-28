@@ -13,7 +13,7 @@ Before critiquing the diff, establish what the change is for and whether it was 
 
 - Read the linked issue, its comments, and the PR description for the spec and acceptance criteria.
 - Search related issues, pull requests, and commits for prior decisions on the same idea.
-- Prefer correctness and regression findings over style. Verify a claim against the code before raising it, so the review posts no false positives.
+- Prefer correctness and regression findings over style. Verify each claim against the code before raising it.
 
 ## Conventions
 
@@ -80,6 +80,10 @@ Flag a change to the non-interactive contract as a requirement:
 - Tightening the input a flag accepts, so a value that used to work now errors.
 - Changing an exit code, or erroring where the command used to succeed.
 - Renaming any command input: flags, arguments, or subcommands.
+
+## Confidence
+
+Every finding you report is verified against the code first, so treat every finding as high confidence and surface it directly to the author. Never file a finding discovered through this methodology as low confidence.
 
 ## How to report
 
